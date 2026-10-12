@@ -16,7 +16,7 @@
 			<h1>Mayhem w Stoczni</h1>
 			<p class="intro">Arena pojedynków na kontrybucje z GitHuba</p>
 
-			<form id="duel-form">
+			<form id="duel-form" novalidate>
 				<div class="players">
 					<label>
 						Gracz 1
@@ -28,6 +28,7 @@
 							autocapitalize="none"
 							spellcheck="false"
 							placeholder="np. octocat"
+							value="pavel-agarkov"
 							required
 						/>
 					</label>
@@ -41,6 +42,7 @@
 							autocapitalize="none"
 							spellcheck="false"
 							placeholder="np. hubot"
+							value="pawel-siwek"
 							required
 						/>
 					</label>
@@ -56,7 +58,12 @@
 </html>
 
 <script>
-	import { getContributionTotal, getDuelWinner } from '../lib/duel';
+	import {
+		getContributionData,
+		getDuelWinner,
+		type ContributionData,
+		type DailyContribution,
+	} from '../lib/duel';
 
 	const form = document.querySelector<HTMLFormElement>('#duel-form');
 	const player1Input = document.querySelector<HTMLInputElement>('#player-1');
@@ -66,6 +73,12 @@
 		'button[type="submit"]',
 	);
 	const numberFormat = new Intl.NumberFormat('pl-PL');
+	const dateFormat = new Intl.DateTimeFormat('pl-PL', {
+		day: 'numeric',
+		month: 'short',
+		year: 'numeric',
+		timeZone: 'UTC',
+	});
 
 	if (form && player1Input && player2Input && results && submitButton) {
 		form.addEventListener('submit', async (event) => {
@@ -74,19 +87,25 @@
 			const player2 = player2Input.value.trim();
 
 			if (!player1 || !player2) {
+				player1Input.toggleAttribute('aria-invalid', !player1);
+				player2Input.toggleAttribute('aria-invalid', !player2);
 				showMessage('Podaj nazwy obu graczy.');
+				(player1 ? player2Input : player1Input).focus();
 				return;
 			}
 
+			player1Input.removeAttribute('aria-invalid');
+			player2Input.removeAttribute('aria-invalid');
 			submitButton.disabled = true;
+			results.setAttribute('aria-busy', 'true');
 			showMessage('Pobieranie danych graczy…');
 
 			try {
-				const [score1, score2] = await Promise.all([
-					loadContributionTotal(player1),
-					loadContributionTotal(player2),
+				const [contributions1, contributions2] = await Promise.all([
+					loadContributions(player1),
+					loadContributions(player2),
 				]);
-				showDuelResult(player1, score1, player2, score2);
+				showDuelResult(player1, contributions1, player2, contributions2);
 			} catch (error) {
 				showMessage(
 					error instanceof Error
@@ -95,11 +114,12 @@
 				);
 			} finally {
 				submitButton.disabled = false;
+				results.removeAttribute('aria-busy');
 			}
 		});
 	}
 
-	async function loadContributionTotal(username: string): Promise<number> {
+	async function loadContributions(username: string): Promise<ContributionData> {
 		let response: Response;
 		try {
 			response = await fetch(
@@ -129,28 +149,95 @@
 			throw new Error('Otrzymano nieprawidłowe dane z GitHuba.');
 		}
 
-		return getContributionTotal(payload);
+		return getContributionData(payload);
 	}
 
 	function showDuelResult(
 		player1: string,
-		score1: number,
+		contributions1: ContributionData,
 		player2: string,
-		score2: number,
+		contributions2: ContributionData,
 	) {
 		const heading = document.createElement('h2');
-		const scoreLine = document.createElement('p');
-		const winner = getDuelWinner(score1, score2);
+		const duel = document.createElement('div');
+		const winner = getDuelWinner(
+			contributions1.total_contributions,
+			contributions2.total_contributions,
+		);
 
 		if (winner === 'draw') {
 			heading.textContent = 'Remis!';
 		} else {
 			heading.textContent = `Zwycięża ${winner === 'player1' ? player1 : player2}!`;
 		}
-		scoreLine.textContent =
-			`${player1}: ${formatContributionCount(score1)} · ` +
-			`${player2}: ${formatContributionCount(score2)}`;
-		results?.replaceChildren(heading, scoreLine);
+
+		duel.className = 'duel';
+		duel.append(
+			createPlayerCard(player1, contributions1),
+			createVsBadge(),
+			createPlayerCard(player2, contributions2),
+		);
+		results?.replaceChildren(heading, duel);
+	}
+
+	function createPlayerCard(username: string, data: ContributionData): HTMLElement {
+		const card = document.createElement('article');
+		const name = document.createElement('h3');
+		const total = document.createElement('p');
+		const dateRange = document.createElement('p');
+		const gridWrap = document.createElement('div');
+		const grid = document.createElement('ol');
+		const days = [...data.contributions].sort((dayA, dayB) =>
+			dayA.date.localeCompare(dayB.date),
+		);
+
+		card.className = 'player-card';
+		name.textContent = username;
+		total.className = 'player-total';
+		total.textContent = formatContributionCount(data.total_contributions);
+		dateRange.className = 'date-range';
+		dateRange.textContent = `Zakres: ${formatDate(data.from)} – ${formatDate(data.to)}`;
+		gridWrap.className = 'contribution-grid-wrap';
+		grid.className = 'contribution-grid';
+		grid.setAttribute('aria-label', `Wykres kontrybucji użytkownika ${username}`);
+
+		const leadingEmptyDays = new Date(`${data.from}T00:00:00.000Z`).getUTCDay();
+		for (let index = 0; index < leadingEmptyDays; index += 1) {
+			const emptyDay = document.createElement('li');
+			emptyDay.className = 'contribution-day empty-day';
+			emptyDay.setAttribute('aria-hidden', 'true');
+			grid.append(emptyDay);
+		}
+
+		for (const day of days) {
+			grid.append(createContributionCell(day));
+		}
+
+		gridWrap.append(grid);
+		card.append(name, total, dateRange, gridWrap);
+		return card;
+	}
+
+	function createContributionCell(day: DailyContribution): HTMLLIElement {
+		const cell = document.createElement('li');
+		const label = `${formatDate(day.date)}: ${formatContributionCount(day.count)}`;
+
+		cell.className = `contribution-day level-${day.level}`;
+		cell.setAttribute('aria-label', label);
+		cell.title = label;
+		return cell;
+	}
+
+	function createVsBadge(): HTMLElement {
+		const badge = document.createElement('span');
+		badge.className = 'vs-badge';
+		badge.textContent = 'VS';
+		badge.setAttribute('aria-label', 'kontra');
+		return badge;
+	}
+
+	function formatDate(date: string): string {
+		return dateFormat.format(new Date(`${date}T00:00:00.000Z`));
 	}
 
 	function formatContributionCount(total: number): string {
@@ -188,7 +275,7 @@
 	}
 
 	main {
-		max-width: 42rem;
+		max-width: 60rem;
 		margin: 3rem auto;
 		padding: 2rem;
 		border: 1px solid #d1d9e0;
@@ -230,6 +317,10 @@
 		font: inherit;
 	}
 
+	input[aria-invalid='true'] {
+		border-color: #cf222e;
+	}
+
 	button {
 		display: block;
 		margin: 1.5rem auto 0;
@@ -255,12 +346,104 @@
 		text-align: center;
 	}
 
-	#results h2 {
+	:global(#results h2) {
 		margin: 0 0 0.5rem;
 	}
 
-	#results p {
+	:global(#results p) {
 		margin: 0.5rem 0;
+	}
+
+	:global(.duel) {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+		align-items: center;
+		gap: 1rem;
+		margin-top: 1.5rem;
+		text-align: left;
+	}
+
+	:global(.player-card) {
+		min-width: 0;
+		padding: 1rem;
+		border: 1px solid #d1d9e0;
+		border-radius: 0.65rem;
+		background: #fff;
+	}
+
+	:global(.player-card h3) {
+		margin: 0;
+		overflow-wrap: anywhere;
+		text-align: center;
+	}
+
+	:global(.player-total) {
+		font-weight: 700;
+		text-align: center;
+	}
+
+	:global(.date-range) {
+		color: #59636e;
+		font-size: 0.875rem;
+		text-align: center;
+	}
+
+	:global(.vs-badge) {
+		display: grid;
+		width: 2.75rem;
+		height: 2.75rem;
+		place-items: center;
+		border-radius: 50%;
+		background: #1f2328;
+		color: #fff;
+		font-size: 0.875rem;
+		font-weight: 700;
+	}
+
+	:global(.contribution-grid-wrap) {
+		overflow-x: auto;
+	}
+
+	:global(.contribution-grid) {
+		display: grid;
+		grid-auto-flow: column;
+		grid-auto-columns: 0.75rem;
+		grid-template-rows: repeat(7, 0.75rem);
+		gap: 3px;
+		width: max-content;
+		margin: 1rem auto 0;
+		padding: 0;
+		list-style: none;
+	}
+
+	:global(.contribution-day) {
+		width: 0.75rem;
+		height: 0.75rem;
+		border-radius: 2px;
+	}
+
+	:global(.level-0) {
+		background: #ebedf0;
+	}
+
+	:global(.level-1) {
+		background: #9be9a8;
+	}
+
+	:global(.level-2) {
+		background: #40c463;
+	}
+
+	:global(.level-3) {
+		background: #30a14e;
+	}
+
+	:global(.level-4) {
+		background: #216e39;
+	}
+
+	:global(.empty-day) {
+		visibility: hidden;
 	}
 
 	@media (max-width: 36rem) {
@@ -269,8 +452,13 @@
 			padding: 1.25rem;
 		}
 
-		.players {
+		.players,
+		:global(.duel) {
 			grid-template-columns: 1fr;
+		}
+
+		:global(.vs-badge) {
+			margin: 0 auto;
 		}
 	}
 </style>
