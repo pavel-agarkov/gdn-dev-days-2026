@@ -47,6 +47,17 @@ npm run dev
 - **Runtime:** Node.js z adapterem [@astrojs/node](https://docs.astro.build/en/guides/integrations-guide/node/)
 - **API:** endpoint wykresów kontrybucji GitHuba
 
+## API kontrybucji
+
+Endpoint `GET /api/contributions/{username}` pobiera JSON z `https://github.com/{username}.contribs`
+po stronie serwera, dzięki czemu przeglądarka nie wykonuje żądania cross-origin do GitHuba.
+Poprawne odpowiedzi są cache'owane przez godzinę; cache aplikacji jest ograniczony do procesu
+i nie jest współdzielony między instancjami serwera. Odpowiedzi zawierają również nagłówek
+`Cache-Control` dla cache'owania po stronie klienta lub CDN.
+
+Nieprawidłowa nazwa użytkownika zwraca 400, brak użytkownika 404, timeout GitHuba 504,
+a pozostałe błędy upstreamu 502. Błędy nie są cache'owane.
+
 ## Wdrożenie aplikacji
 
 GitHub Pages to hosting statyczny, więc żeby opublikować tam aplikację, trzeba przejść na wyjście statyczne:
