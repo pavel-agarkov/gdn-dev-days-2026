@@ -1,17 +1,276 @@
----
-
----
-
+<!doctype html>
 <html lang="pl">
 	<head>
 		<meta charset="utf-8" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>Mayhem w Stoczni</title>
+		<meta
+			name="description"
+			content="Porównaj kontrybucje dwóch graczy w pojedynku Mayhem w Stoczni."
+		/>
+		<title>Mayhem w Stoczni — arena pojedynków</title>
 	</head>
 	<body>
-		<h1>Mayhem w Stoczni</h1>
-		<p>Witaj w Mayhem w Stoczni! Czas zbudować arenę pojedynków na kontrybucje z GitHuba.</p>
+		<main>
+			<h1>Mayhem w Stoczni</h1>
+			<p class="intro">Arena pojedynków na kontrybucje z GitHuba</p>
+
+			<form id="duel-form">
+				<div class="players">
+					<label>
+						Gracz 1
+						<input
+							id="player-1"
+							name="player1"
+							type="text"
+							autocomplete="off"
+							autocapitalize="none"
+							spellcheck="false"
+							placeholder="np. octocat"
+							required
+						/>
+					</label>
+					<label>
+						Gracz 2
+						<input
+							id="player-2"
+							name="player2"
+							type="text"
+							autocomplete="off"
+							autocapitalize="none"
+							spellcheck="false"
+							placeholder="np. hubot"
+							required
+						/>
+					</label>
+				</div>
+				<button type="submit">Walcz!</button>
+			</form>
+
+			<section id="results" aria-live="polite" aria-atomic="true">
+				<p>Wpisz nazwy graczy i rozpocznij pojedynek.</p>
+			</section>
+		</main>
 	</body>
 </html>
+
+<script>
+	import { getContributionTotal, getDuelWinner } from '../lib/duel';
+
+	const form = document.querySelector<HTMLFormElement>('#duel-form');
+	const player1Input = document.querySelector<HTMLInputElement>('#player-1');
+	const player2Input = document.querySelector<HTMLInputElement>('#player-2');
+	const results = document.querySelector<HTMLElement>('#results');
+	const submitButton = form?.querySelector<HTMLButtonElement>(
+		'button[type="submit"]',
+	);
+	const numberFormat = new Intl.NumberFormat('pl-PL');
+
+	if (form && player1Input && player2Input && results && submitButton) {
+		form.addEventListener('submit', async (event) => {
+			event.preventDefault();
+			const player1 = player1Input.value.trim();
+			const player2 = player2Input.value.trim();
+
+			if (!player1 || !player2) {
+				showMessage('Podaj nazwy obu graczy.');
+				return;
+			}
+
+			submitButton.disabled = true;
+			showMessage('Pobieranie danych graczy…');
+
+			try {
+				const [score1, score2] = await Promise.all([
+					loadContributionTotal(player1),
+					loadContributionTotal(player2),
+				]);
+				showDuelResult(player1, score1, player2, score2);
+			} catch (error) {
+				showMessage(
+					error instanceof Error
+						? error.message
+						: 'Nie udało się rozstrzygnąć pojedynku. Spróbuj ponownie.',
+				);
+			} finally {
+				submitButton.disabled = false;
+			}
+		});
+	}
+
+	async function loadContributionTotal(username: string): Promise<number> {
+		let response: Response;
+		try {
+			response = await fetch(
+				`/api/contributions/${encodeURIComponent(username)}`,
+			);
+		} catch {
+			throw new Error('Nie udało się połączyć z serwerem. Spróbuj ponownie.');
+		}
+
+		if (!response.ok) {
+			if (response.status === 400) {
+				throw new Error('Nazwa użytkownika GitHuba jest nieprawidłowa.');
+			}
+			if (response.status === 404) {
+				throw new Error('Nie znaleziono użytkownika GitHuba.');
+			}
+			if (response.status === 504) {
+				throw new Error('GitHub nie odpowiedział na czas. Spróbuj ponownie.');
+			}
+			throw new Error('Nie udało się pobrać danych z GitHuba. Spróbuj ponownie.');
+		}
+
+		let payload: unknown;
+		try {
+			payload = await response.json();
+		} catch {
+			throw new Error('Otrzymano nieprawidłowe dane z GitHuba.');
+		}
+
+		return getContributionTotal(payload);
+	}
+
+	function showDuelResult(
+		player1: string,
+		score1: number,
+		player2: string,
+		score2: number,
+	) {
+		const heading = document.createElement('h2');
+		const scoreLine = document.createElement('p');
+		const winner = getDuelWinner(score1, score2);
+
+		if (winner === 'draw') {
+			heading.textContent = 'Remis!';
+		} else {
+			heading.textContent = `Zwycięża ${winner === 'player1' ? player1 : player2}!`;
+		}
+		scoreLine.textContent =
+			`${player1}: ${formatContributionCount(score1)} · ` +
+			`${player2}: ${formatContributionCount(score2)}`;
+		results?.replaceChildren(heading, scoreLine);
+	}
+
+	function formatContributionCount(total: number): string {
+		const lastTwoDigits = total % 100;
+		const lastDigit = total % 10;
+		const noun =
+			total === 1
+				? 'kontrybucja'
+				: lastDigit >= 2 && lastDigit <= 4 &&
+					  (lastTwoDigits < 12 || lastTwoDigits > 14)
+					? 'kontrybucje'
+					: 'kontrybucji';
+
+		return `${numberFormat.format(total)} ${noun}`;
+	}
+
+	function showMessage(message: string) {
+		const paragraph = document.createElement('p');
+		paragraph.textContent = message;
+		results?.replaceChildren(paragraph);
+	}
+</script>
+
+<style>
+	:global(*) {
+		box-sizing: border-box;
+	}
+
+	:global(body) {
+		margin: 0;
+		padding: 2rem 1rem;
+		background: #f6f8fa;
+		color: #1f2328;
+		font-family: system-ui, sans-serif;
+	}
+
+	main {
+		max-width: 42rem;
+		margin: 3rem auto;
+		padding: 2rem;
+		border: 1px solid #d1d9e0;
+		border-radius: 0.75rem;
+		background: #fff;
+	}
+
+	h1,
+	.intro {
+		text-align: center;
+	}
+
+	h1 {
+		margin: 0;
+	}
+
+	.intro {
+		margin: 0.5rem 0 2rem;
+		color: #59636e;
+	}
+
+	.players {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+	}
+
+	label {
+		display: grid;
+		gap: 0.5rem;
+		font-weight: 600;
+	}
+
+	input {
+		width: 100%;
+		padding: 0.7rem;
+		border: 1px solid #8c959f;
+		border-radius: 0.4rem;
+		font: inherit;
+	}
+
+	button {
+		display: block;
+		margin: 1.5rem auto 0;
+		padding: 0.7rem 1.5rem;
+		border: 0;
+		border-radius: 0.4rem;
+		background: #1f883d;
+		color: #fff;
+		font: inherit;
+		font-weight: 600;
+		cursor: pointer;
+	}
+
+	button:disabled {
+		cursor: wait;
+		opacity: 0.65;
+	}
+
+	#results {
+		margin-top: 2rem;
+		padding-top: 1rem;
+		border-top: 1px solid #d1d9e0;
+		text-align: center;
+	}
+
+	#results h2 {
+		margin: 0 0 0.5rem;
+	}
+
+	#results p {
+		margin: 0.5rem 0;
+	}
+
+	@media (max-width: 36rem) {
+		main {
+			margin: 1rem auto;
+			padding: 1.25rem;
+		}
+
+		.players {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
