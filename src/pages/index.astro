@@ -5,21 +5,50 @@
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
+		<meta name="theme-color" content="#0d1117" />
 		<meta
 			name="description"
 			content="Porównaj kontrybucje dwóch graczy w pojedynku Mayhem w Stoczni."
 		/>
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+		<link
+			href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Press+Start+2P&display=swap"
+			rel="stylesheet"
+		/>
 		<title>Mayhem w Stoczni — arena pojedynków</title>
 	</head>
 	<body>
+		<div class="scene" aria-hidden="true">
+			<svg
+				class="cityscape"
+				viewBox="0 0 1440 320"
+				preserveAspectRatio="xMidYMax slice"
+				focusable="false"
+			>
+				<g class="city-buildings">
+					<path
+						d="M0 320V194h45v-30h18v30h24v-52h18v-22h14v22h18v52h35v-34h14v-18h10v18h14v34h34v-67h18v-22h12v-36h8V38h8v69h12v36h15v22h16v-34h14v-28h12v28h14v34h25v-55h12v-34h12v34h15v55h25v-91h14v-30h11v30h15v91h27v-46h16v-28h12v28h16v46h31v-76h16v-28h10v28h15v76h31v-49h18v-21h12v21h17v49h30v-81h14v-31h11v31h16v81h31v-54h16v-28h12v28h17v54h31v-83h14v-30h12v30h15v83h28v-47h18v-24h11v24h17v47h33v-71h15v-27h12v27h18v71h28v-58h18v-21h12v21h18v58h26v-80h17v-32h12v32h17v80h39v-55h17v-27h12v27h16v55h39v-92h18v-28h12v28h18v92h50v-54h22v-24h14v24h21v54h38v-77h22v-28h14v28h20v77h48v-52h24v-22h14v22h22v52h52V320Z"
+					/>
+					<path
+						class="city-spires"
+						d="M104 168V74h7V27h5v47h7v94M376 229V113h8V58h5v55h8v116M651 244V128h8V61h5v67h8v116M1007 239V115h8V51h5v64h8v124M1250 240V134h7V78h5v56h7v106"
+					/>
+					<path class="city-windows" d="M51 218h8v10h-8zm28 0h8v10h-8zm90-4h8v10h-8zm36 0h8v10h-8zm66 4h8v10h-8zm34-98h7v10h-7zm31 0h7v10h-7zm74 84h8v10h-8zm33 0h8v10h-8zm83-5h8v10h-8zm40 0h8v10h-8zm56 37h8v10h-8zm48-43h8v10h-8zm46 0h8v10h-8zm65 18h8v10h-8zm39-67h8v10h-8zm39 0h8v10h-8zm68 72h8v10h-8zm41-32h8v10h-8zm59 40h8v10h-8zm46-79h8v10h-8zm39 0h8v10h-8zm71 47h8v10h-8zm55 0h8v10h-8zm54 37h8v10h-8z" />
+				</g>
+			</svg>
+		</div>
 		<main>
-			<h1>Mayhem w Stoczni</h1>
-			<p class="intro">Arena pojedynków na kontrybucje z GitHuba</p>
+			<header class="hero">
+				<p class="eyebrow">Gdańsk · Stocznia · nocna zmiana</p>
+				<h1>Mayhem<br />w Stoczni</h1>
+				<p class="intro">Arena pojedynków na kontrybucje z GitHuba</p>
+			</header>
 
 			<form id="duel-form" novalidate>
 				<div class="players">
 					<label>
-						Gracz 1
+						<span>Gracz 1 <span class="player-index">/ 01</span></span>
 						<input
 							id="player-1"
 							name="player1"
@@ -33,7 +62,7 @@
 						/>
 					</label>
 					<label>
-						Gracz 2
+						<span>Gracz 2 <span class="player-index">/ 02</span></span>
 						<input
 							id="player-2"
 							name="player2"
@@ -47,7 +76,7 @@
 						/>
 					</label>
 				</div>
-				<button type="submit">Walcz!</button>
+				<button type="submit"><span aria-hidden="true">▶</span> Walcz!</button>
 			</form>
 
 			<section id="results" aria-live="polite" aria-atomic="true">
@@ -173,6 +202,7 @@
 
 		duel.className = 'duel';
 		duel.append(
+			createGantry(),
 			createPlayerCard(player1, contributions1),
 			createVsBadge(),
 			createPlayerCard(player2, contributions2),
@@ -236,6 +266,35 @@
 		return badge;
 	}
 
+	function createGantry(): SVGSVGElement {
+		const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+		svg.setAttribute('class', 'gantry-scene');
+		svg.setAttribute('viewBox', '0 0 1000 500');
+		svg.setAttribute('preserveAspectRatio', 'none');
+		svg.setAttribute('aria-hidden', 'true');
+		svg.setAttribute('focusable', 'false');
+
+		const beam = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+		beam.setAttribute('class', 'gantry-beam');
+		beam.setAttribute(
+			'd',
+			'M28 498V34H972V498 M28 62H972 M54 34V16H946V34 M28 34L88 62 M88 34L28 62 M912 34L972 62 M972 34L912 62',
+		);
+		svg.append(beam);
+
+		const lattice = document.createElementNS(
+			'http://www.w3.org/2000/svg',
+			'path',
+		);
+		lattice.setAttribute('class', 'gantry-lattice');
+		lattice.setAttribute(
+			'd',
+			'M28 104L88 164L28 224L88 284L28 344L88 404L28 464 M88 104L28 164L88 224L28 284L88 344L28 404L88 464 M912 104L972 164L912 224L972 284L912 344L972 404L912 464 M972 104L912 164L972 224L912 284L972 344L912 404L972 464 M120 62V84H880V62',
+		);
+		svg.append(lattice);
+		return svg;
+	}
+
 	function formatDate(date: string): string {
 		return dateFormat.format(new Date(`${date}T00:00:00.000Z`));
 	}
@@ -266,88 +325,245 @@
 		box-sizing: border-box;
 	}
 
+	:global(:root) {
+		--bg: #0d1117;
+		--crane: #3fb950;
+		--crane-dim: #2ea043;
+		--amber: #e3b341;
+		--rust: #b45309;
+		--steel: #8b949e;
+		--text: #e6edf3;
+		color-scheme: dark;
+		font-family: 'JetBrains Mono', monospace;
+	}
+
 	:global(body) {
 		margin: 0;
-		padding: 2rem 1rem;
-		background: #f6f8fa;
-		color: #1f2328;
-		font-family: system-ui, sans-serif;
+		min-width: 20rem;
+		min-height: 100vh;
+		padding: clamp(1.5rem, 5vw, 4.5rem) 1rem 3rem;
+		overflow-x: hidden;
+		background: var(--bg);
+		color: var(--text);
+		font-size: 0.9rem;
+		line-height: 1.7;
+	}
+
+	:global(body)::before {
+		position: fixed;
+		z-index: 0;
+		inset: 0;
+		background-image:
+			linear-gradient(var(--steel) 1px, transparent 1px),
+			linear-gradient(90deg, var(--steel) 1px, transparent 1px);
+		background-size: 16px 16px;
+		content: '';
+		opacity: 0.055;
+		pointer-events: none;
+	}
+
+	.scene {
+		position: fixed;
+		z-index: 0;
+		inset: 0;
+		overflow: hidden;
+		pointer-events: none;
+	}
+
+	.scene::before {
+		position: absolute;
+		inset: 0;
+		background:
+			radial-gradient(ellipse at 50% 90%, var(--crane-dim), transparent 55%),
+			radial-gradient(ellipse at 50% 110%, var(--amber), transparent 38%);
+		content: '';
+		opacity: 0.075;
+	}
+
+	.cityscape {
+		position: absolute;
+		right: -4%;
+		bottom: 3%;
+		width: 108%;
+		height: min(42vh, 22rem);
+		animation: skyline-drift 38s ease-in-out infinite alternate;
+		fill: var(--rust);
+		opacity: 0.18;
+		stroke: var(--rust);
+		stroke-width: 3;
+	}
+
+	.city-spires {
+		fill: none;
+		stroke-width: 5;
+	}
+
+	.city-windows {
+		fill: var(--amber);
+		opacity: 0.55;
 	}
 
 	main {
-		max-width: 60rem;
-		margin: 3rem auto;
-		padding: 2rem;
-		border: 1px solid #d1d9e0;
-		border-radius: 0.75rem;
-		background: #fff;
+		position: relative;
+		z-index: 1;
+		max-width: 72rem;
+		margin: 0 auto;
+		padding: clamp(1.25rem, 4vw, 3.5rem);
+		border: 1px solid var(--steel);
+		background: var(--bg);
+		box-shadow: 8px 8px 0 var(--crane-dim);
 	}
 
-	h1,
-	.intro {
+	.hero {
+		margin-bottom: clamp(2rem, 5vw, 3.75rem);
 		text-align: center;
+	}
+
+	.eyebrow {
+		margin: 0 0 1.5rem;
+		color: var(--crane);
+		font-size: 0.7rem;
+		font-weight: 700;
+		letter-spacing: 0.16em;
+		text-transform: uppercase;
 	}
 
 	h1 {
 		margin: 0;
+		color: var(--amber);
+		font-family: 'Press Start 2P', monospace;
+		font-size: clamp(1.35rem, 4vw, 2.8rem);
+		font-weight: 400;
+		line-height: 1.65;
+		text-shadow: 0 0 0.35rem var(--amber), 0 0 1.5rem var(--rust);
 	}
 
 	.intro {
-		margin: 0.5rem 0 2rem;
-		color: #59636e;
+		margin: 0.9rem 0 0;
+		color: var(--steel);
+		font-size: clamp(0.78rem, 1.5vw, 0.95rem);
+	}
+
+	#duel-form {
+		position: relative;
+		padding: clamp(1rem, 3vw, 2rem);
+		border: 1px solid var(--crane-dim);
+		background: var(--bg);
+		box-shadow: inset 0 0 2rem var(--crane-dim);
 	}
 
 	.players {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 1rem;
+		gap: clamp(1rem, 3vw, 2rem);
 	}
 
 	label {
 		display: grid;
 		gap: 0.5rem;
-		font-weight: 600;
+		color: var(--crane);
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-transform: uppercase;
+	}
+
+	.player-index {
+		color: var(--steel);
+		font-size: 0.65rem;
 	}
 
 	input {
 		width: 100%;
-		padding: 0.7rem;
-		border: 1px solid #8c959f;
-		border-radius: 0.4rem;
+		min-height: 3.25rem;
+		padding: 0.75rem 1rem;
+		border: 1px solid var(--steel);
+		border-radius: 0;
+		background: var(--bg);
+		color: var(--text);
 		font: inherit;
 	}
 
+	input::placeholder {
+		color: var(--steel);
+		opacity: 0.65;
+	}
+
 	input[aria-invalid='true'] {
-		border-color: #cf222e;
+		border-color: var(--rust);
+		box-shadow: 0 0 0.75rem var(--rust);
+	}
+
+	input:focus-visible,
+	button:focus-visible {
+		outline: 2px solid var(--amber);
+		outline-offset: 3px;
 	}
 
 	button {
 		display: block;
 		margin: 1.5rem auto 0;
-		padding: 0.7rem 1.5rem;
+		padding: 0.8rem 1.8rem;
 		border: 0;
-		border-radius: 0.4rem;
-		background: #1f883d;
-		color: #fff;
+		border-radius: 0;
+		background: var(--crane);
+		color: var(--bg);
 		font: inherit;
 		font-weight: 600;
 		cursor: pointer;
+		box-shadow: 4px 4px 0 var(--crane-dim);
+		transition: transform 140ms ease, box-shadow 140ms ease;
+	}
+
+	button:hover:not(:disabled) {
+		transform: translate(2px, 2px);
+		box-shadow: 2px 2px 0 var(--crane-dim);
 	}
 
 	button:disabled {
 		cursor: wait;
-		opacity: 0.65;
+		opacity: 0.6;
 	}
 
 	#results {
-		margin-top: 2rem;
-		padding-top: 1rem;
-		border-top: 1px solid #d1d9e0;
+		position: relative;
+		min-height: 5rem;
+		margin-top: 2.25rem;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--steel);
 		text-align: center;
 	}
 
+	#results[aria-busy='true']::before {
+		position: absolute;
+		top: 0.35rem;
+		left: 50%;
+		width: 2px;
+		height: 2.2rem;
+		background: var(--steel);
+		content: '';
+		animation: hook-cable 1.8s ease-in-out infinite alternate;
+	}
+
+	#results[aria-busy='true']::after {
+		position: absolute;
+		top: 2.3rem;
+		left: calc(50% - 0.35rem);
+		width: 0.65rem;
+		height: 0.65rem;
+		border: 2px solid var(--amber);
+		border-top-color: transparent;
+		border-radius: 50%;
+		content: '';
+		animation: hook-lower 1.8s ease-in-out infinite alternate;
+	}
+
 	:global(#results h2) {
-		margin: 0 0 0.5rem;
+		margin: 0 0 1rem;
+		color: var(--amber);
+		font-family: 'Press Start 2P', monospace;
+		font-size: clamp(0.75rem, 2vw, 1rem);
+		line-height: 1.8;
+		text-shadow: 0 0 0.8rem var(--amber);
 	}
 
 	:global(#results p) {
@@ -355,91 +571,166 @@
 	}
 
 	:global(.duel) {
+		position: relative;
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
 		align-items: center;
-		gap: 1rem;
-		margin-top: 1.5rem;
+		gap: clamp(0.75rem, 2vw, 1.75rem);
+		margin: 2rem 0 0;
 		text-align: left;
 	}
 
+	:global(.gantry-scene) {
+		position: absolute;
+		z-index: 0;
+		inset: -1.75rem -1.75rem -1rem;
+		width: calc(100% + 3.5rem);
+		height: calc(100% + 2.75rem);
+		overflow: visible;
+		pointer-events: none;
+		animation: crane-idle 5s ease-in-out infinite alternate;
+	}
+
+	:global(.gantry-beam),
+	:global(.gantry-lattice) {
+		fill: none;
+		vector-effect: non-scaling-stroke;
+	}
+
+	:global(.gantry-beam) {
+		stroke: var(--crane);
+		stroke-width: 4;
+	}
+
+	:global(.gantry-lattice) {
+		stroke: var(--crane-dim);
+		stroke-width: 2;
+	}
+
 	:global(.player-card) {
+		position: relative;
+		z-index: 1;
 		min-width: 0;
-		padding: 1rem;
-		border: 1px solid #d1d9e0;
-		border-radius: 0.65rem;
-		background: #fff;
+		padding: clamp(0.85rem, 2vw, 1.5rem);
+		border: 1px solid var(--amber);
+		border-top-width: 4px;
+		border-radius: 0;
+		background: var(--bg);
+		box-shadow: 0 0 1.25rem var(--rust);
 	}
 
 	:global(.player-card h3) {
-		margin: 0;
+		margin: 0 0 0.75rem;
 		overflow-wrap: anywhere;
+		color: var(--text);
+		font-family: 'Press Start 2P', monospace;
+		font-size: clamp(0.65rem, 1.4vw, 0.9rem);
+		font-weight: 400;
+		line-height: 1.8;
 		text-align: center;
 	}
 
 	:global(.player-total) {
+		margin: 0.5rem 0;
+		color: var(--amber);
+		font-size: clamp(1rem, 2vw, 1.35rem);
 		font-weight: 700;
 		text-align: center;
+		text-shadow: 0 0 0.8rem var(--amber);
 	}
 
 	:global(.date-range) {
-		color: #59636e;
-		font-size: 0.875rem;
+		color: var(--steel);
+		font-size: 0.72rem;
 		text-align: center;
 	}
 
 	:global(.vs-badge) {
+		position: relative;
+		z-index: 2;
 		display: grid;
-		width: 2.75rem;
-		height: 2.75rem;
+		width: 3.6rem;
+		min-height: 2.5rem;
+		margin-top: 2rem;
 		place-items: center;
-		border-radius: 50%;
-		background: #1f2328;
-		color: #fff;
-		font-size: 0.875rem;
+		border: 2px solid var(--amber);
+		background: var(--bg);
+		color: var(--amber);
+		font-family: 'Press Start 2P', monospace;
+		font-size: 0.75rem;
 		font-weight: 700;
+		box-shadow: 0 0 0.8rem var(--amber);
+		transform-origin: 50% -3.5rem;
+		animation: container-swing 4s ease-in-out infinite;
+	}
+
+	:global(.vs-badge)::before {
+		position: absolute;
+		bottom: 100%;
+		left: 50%;
+		width: 2px;
+		height: 3.5rem;
+		background: var(--steel);
+		content: '';
 	}
 
 	:global(.contribution-grid-wrap) {
 		overflow-x: auto;
+		scrollbar-color: var(--crane-dim) var(--bg);
 	}
 
 	:global(.contribution-grid) {
 		display: grid;
 		grid-auto-flow: column;
-		grid-auto-columns: 0.75rem;
-		grid-template-rows: repeat(7, 0.75rem);
-		gap: 3px;
+		grid-auto-columns: 0.8rem;
+		grid-template-rows: repeat(7, 0.8rem);
+		gap: 4px;
 		width: max-content;
-		margin: 1rem auto 0;
+		margin: 1.25rem auto 0;
 		padding: 0;
 		list-style: none;
 	}
 
 	:global(.contribution-day) {
-		width: 0.75rem;
-		height: 0.75rem;
-		border-radius: 2px;
+		position: relative;
+		width: 0.8rem;
+		height: 0.8rem;
+		border: 1px solid var(--steel);
+		background: var(--bg);
+		box-shadow: inset 0 -2px 0 var(--steel);
+		transition: transform 140ms ease, box-shadow 140ms ease;
+	}
+
+	:global(.contribution-day:not(.empty-day):hover) {
+		z-index: 1;
+		box-shadow: 0 0 0 1px var(--amber), 0 0 0.7rem var(--amber);
+		transform: translateY(-3px);
 	}
 
 	:global(.level-0) {
-		background: #ebedf0;
+		background: var(--bg);
 	}
 
 	:global(.level-1) {
-		background: #9be9a8;
+		border-color: var(--crane-dim);
+		background: var(--crane-dim);
 	}
 
 	:global(.level-2) {
-		background: #40c463;
+		border-color: var(--crane);
+		background: var(--crane);
 	}
 
 	:global(.level-3) {
-		background: #30a14e;
+		border-color: var(--crane-dim);
+		background: var(--crane-dim);
+		box-shadow: inset 0 -2px 0 var(--bg), 0 0 0.25rem var(--crane-dim);
 	}
 
 	:global(.level-4) {
-		background: #216e39;
+		border-color: var(--crane);
+		background: var(--crane);
+		box-shadow: inset 0 -2px 0 var(--bg), 0 0 0.45rem var(--crane);
 	}
 
 	:global(.empty-day) {
@@ -448,8 +739,8 @@
 
 	@media (max-width: 36rem) {
 		main {
-			margin: 1rem auto;
-			padding: 1.25rem;
+			padding: 1.25rem 1rem;
+			box-shadow: 4px 4px 0 var(--crane-dim);
 		}
 
 		.players,
@@ -457,8 +748,76 @@
 			grid-template-columns: 1fr;
 		}
 
+		:global(.duel) {
+			gap: 1rem;
+			padding: 1rem 0;
+		}
+
+		:global(.gantry-scene) {
+			inset: -1.5rem -0.65rem -1.5rem;
+			width: calc(100% + 1.3rem);
+			height: calc(100% + 3rem);
+		}
+
 		:global(.vs-badge) {
 			margin: 0 auto;
+		}
+
+		:global(.vs-badge)::before {
+			height: 1.5rem;
+		}
+
+		.cityscape {
+			right: -30%;
+			width: 160%;
+			height: 32vh;
+		}
+	}
+
+	@keyframes container-swing {
+		0%,
+		100% {
+			transform: rotate(-3deg);
+		}
+
+		50% {
+			transform: rotate(3deg);
+		}
+	}
+
+	@keyframes hook-lower {
+		from { transform: translateY(0); }
+		to { transform: translateY(1.2rem); }
+	}
+
+	@keyframes hook-cable {
+		from { height: 2.2rem; }
+		to { height: 3.4rem; }
+	}
+
+	@keyframes crane-idle {
+		from { transform: translateY(0); }
+		to { transform: translateY(2px); }
+	}
+
+	@keyframes skyline-drift {
+		from {
+			transform: translateX(0);
+		}
+
+		to {
+			transform: translateX(1.5%);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		:global(*),
+		:global(*::before),
+		:global(*::after) {
+			scroll-behavior: auto !important;
+			animation-duration: 0.01ms !important;
+			animation-iteration-count: 1 !important;
+			transition-duration: 0.01ms !important;
 		}
 	}
 </style>
